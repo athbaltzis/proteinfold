@@ -48,6 +48,7 @@ include { PREPARE_ALPHAFOLD2_DBS } from '../subworkflows/local/prepare_alphafold
 include { RUN_ALPHAFOLD2      } from '../modules/local/run_alphafold2'
 include { RUN_ALPHAFOLD2_MSA  } from '../modules/local/run_alphafold2_msa'
 include { RUN_ALPHAFOLD2_PRED } from '../modules/local/run_alphafold2_pred'
+include { RUN_JALVIEW         } from '../modules/local/run_jalview'
 
 /*
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -123,7 +124,7 @@ workflow ALPHAFOLD2 {
             PREPARE_ALPHAFOLD2_DBS.out.uniprot,
         )
         ch_versions = ch_versions.mix(RUN_ALPHAFOLD2.out.versions)
-        ch_multiqc_rep = RUN_ALPHAFOLD2.out.multiqc.collect()
+        ch_multiqc_rep = ch_multiqc_rep.mix(RUN_ALPHAFOLD2.out.multiqc.collect())
     } else if (params.alphafold2_mode == 'split_msa_prediction') {
         //
         // SUBWORKFLOW: Run Alphafold2 split mode, MSA and predicition

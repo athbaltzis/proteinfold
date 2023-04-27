@@ -48,6 +48,8 @@ include { PREPARE_COLABFOLD_DBS } from '../subworkflows/local/prepare_colabfold_
 include { COLABFOLD_BATCH        } from '../modules/local/colabfold_batch'
 include { MMSEQS_COLABFOLDSEARCH } from '../modules/local/mmseqs_colabfoldsearch'
 include { MULTIFASTA_TO_CSV      } from '../modules/local/multifasta_to_csv'
+include { REFORMAT_ALIGNMENT     } from '../modules/local/reformat_alignment'
+include { RUN_JALVIEW            } from '../modules/local/run_jalview'
 
 /*
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -103,6 +105,7 @@ workflow COLABFOLD {
                 params.num_recycle
             )
             ch_versions = ch_versions.mix(COLABFOLD_BATCH.out.versions)
+            ch_multiqc_rep = ch_multiqc_rep.mix(COLABFOLD_BATCH.out.multiqc.collect())
         } else {
             COLABFOLD_BATCH(
                 INPUT_CHECK.out.fastas,
@@ -113,6 +116,19 @@ workflow COLABFOLD {
                 params.num_recycle
             )
             ch_versions = ch_versions.mix(COLABFOLD_BATCH.out.versions)
+            ch_multiqc_rep = ch_multiqc_rep.mix(COLABFOLD_BATCH.out.multiqc.collect())
+            REFORMAT_ALIGNMENT(
+                COLABFOLD_BATCH.out.aln_output
+            )
+            ch_versions = ch_versions.mix(REFORMAT_ALIGNMENT.out.versions)
+            RUN_JALVIEW(
+                INPUT_CHECK.out.fastas,
+                REFORMAT_ALIGNMENT.out.a2m_alignment,
+                COLABFOLD_BATCH.out.pdb_output,
+                COLABFOLD_BATCH.out.plddt_output
+            )
+            ch_versions = ch_versions.mix(RUN_JALVIEW.out.versions)
+            ch_multiqc_rep = ch_multiqc_rep.mix(RUN_JALVIEW.out.multiqc.collect())
         }
 
     } else if (params.colabfold_server == 'local') {
@@ -154,6 +170,19 @@ workflow COLABFOLD {
             params.num_recycle
         )
         ch_versions = ch_versions.mix(COLABFOLD_BATCH.out.versions)
+        ch_multiqc_rep = ch_multiqc_rep.mix(COLABFOLD_BATCH.out.multiqc.collect())
+        REFORMAT_ALIGNMENT(
+                COLABFOLD_BATCH.out.aln_output
+            )
+            ch_versions = ch_versions.mix(REFORMAT_ALIGNMENT.out.versions)
+            RUN_JALVIEW(
+                INPUT_CHECK.out.fastas,
+                REFORMAT_ALIGNMENT.out.a2m_alignment,
+                COLABFOLD_BATCH.out.pdb_output,
+                COLABFOLD_BATCH.out.plddt_output
+            )
+            ch_versions = ch_versions.mix(RUN_JALVIEW.out.versions)
+            ch_multiqc_rep = ch_multiqc_rep.mix(RUN_JALVIEW.out.multiqc.collect())
     }
 
      //
@@ -176,7 +205,7 @@ workflow COLABFOLD {
     ch_multiqc_files = ch_multiqc_files.mix(ch_workflow_summary.collectFile(name: 'workflow_summary_mqc.yaml'))
     ch_multiqc_files = ch_multiqc_files.mix(ch_methods_description.collectFile(name: 'methods_description_mqc.yaml'))
     ch_multiqc_files = ch_multiqc_files.mix(CUSTOM_DUMPSOFTWAREVERSIONS.out.mqc_yml.collect())
-    ch_multiqc_files = ch_multiqc_files.mix(COLABFOLD_BATCH.out.multiqc.collect())
+    ch_multiqc_files = ch_multiqc_files.mix(ch_multiqc_rep)
 
     MULTIQC (
         ch_multiqc_files.collect(),

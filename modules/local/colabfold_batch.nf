@@ -15,7 +15,10 @@ process COLABFOLD_BATCH {
     val   numRec
 
     output:
-    path ("*")         , emit: pdb
+    path ("*") , emit: pdb
+    tuple val(meta), path("${fasta.baseName}*_relaxed_rank_1_*.pdb"), emit: pdb_output
+    tuple val(meta), path("${fasta.baseName}*.a3m"), emit: aln_output
+    tuple val(meta), path("${fasta.baseName}*_predicted_aligned_error_v1.json"), emit: plddt_output
     path ("*_mqc.png") , emit: multiqc
     path "versions.yml", emit: versions
 
