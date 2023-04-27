@@ -75,6 +75,7 @@ def multiqc_report = []
 workflow COLABFOLD {
 
     ch_versions = Channel.empty()
+    ch_multiqc_rep = Channel.empty()
 
     //
     // SUBWORKFLOW: Read in samplesheet, validate and stage input files

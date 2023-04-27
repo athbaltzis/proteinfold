@@ -26,6 +26,9 @@ process RUN_ALPHAFOLD2 {
 
     output:
     path ("${fasta.baseName}*")
+    tuple val(meta), path("${fasta.baseName}.alphafold.pdb"), emit: pdb_output
+    tuple val(meta), path("${fasta.baseName}/msas/small_bfd_hits.sto"), emit: alignment
+    tuple val(meta), path("${fasta.baseName}/result*.pkl"), emit: pkl
     path "*_mqc.tsv", emit: multiqc
     path "versions.yml", emit: versions
 

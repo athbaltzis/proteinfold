@@ -48,6 +48,7 @@ include { PREPARE_ALPHAFOLD2_DBS } from '../subworkflows/local/prepare_alphafold
 include { RUN_ALPHAFOLD2      } from '../modules/local/run_alphafold2'
 include { RUN_ALPHAFOLD2_MSA  } from '../modules/local/run_alphafold2_msa'
 include { RUN_ALPHAFOLD2_PRED } from '../modules/local/run_alphafold2_pred'
+include { PAE_TO_JSON         } from '../modules/local/pae_to_json'
 include { RUN_JALVIEW         } from '../modules/local/run_jalview'
 
 /*
@@ -74,6 +75,7 @@ def multiqc_report = []
 workflow ALPHAFOLD2 {
 
     ch_versions = Channel.empty()
+    ch_multiqc_rep = Channel.empty()
 
     //
     // SUBWORKFLOW: Read in samplesheet, validate and stage input files
@@ -125,6 +127,20 @@ workflow ALPHAFOLD2 {
         )
         ch_versions = ch_versions.mix(RUN_ALPHAFOLD2.out.versions)
         ch_multiqc_rep = ch_multiqc_rep.mix(RUN_ALPHAFOLD2.out.multiqc.collect())
+        if (params.alphafold2_model_preset == 'monomer_ptm') {
+            PAE_TO_JSON (
+                RUN_ALPHAFOLD2.out.pkl
+            )
+            ch_versions = ch_versions.mix(PAE_TO_JSON.out.versions)
+            RUN_JALVIEW (
+                ch_fasta,
+                RUN_ALPHAFOLD2.out.alignment,
+                RUN_ALPHAFOLD2.out.pdb_output,
+                PAE_TO_JSON.out.plddt_json
+            )
+            ch_versions = ch_versions.mix(RUN_JALVIEW.out.versions)
+            ch_multiqc_rep = ch_multiqc_rep.mix(RUN_JALVIEW.out.multiqc.collect())
+        }
     } else if (params.alphafold2_mode == 'split_msa_prediction') {
         //
         // SUBWORKFLOW: Run Alphafold2 split mode, MSA and predicition
@@ -165,7 +181,22 @@ workflow ALPHAFOLD2 {
 
         )
         ch_versions = ch_versions.mix(RUN_ALPHAFOLD2_PRED.out.versions)
-        ch_multiqc_rep = RUN_ALPHAFOLD2_PRED.out.multiqc.collect()
+        ch_multiqc_rep = ch_multiqc_rep.mix(RUN_ALPHAFOLD2_PRED.out.multiqc.collect())
+
+        if (params.alphafold2_model_preset == 'monomer_ptm') {
+            PAE_TO_JSON (
+                RUN_ALPHAFOLD2_PRED.out.pkl
+            )
+            ch_versions = ch_versions.mix(PAE_TO_JSON.out.versions)
+            RUN_JALVIEW (
+                ch_fasta,
+                RUN_ALPHAFOLD2_MSA.out.alignment,
+                RUN_ALPHAFOLD2_PRED.out.pdb_output,
+                PAE_TO_JSON.out.plddt_json
+            )
+            ch_versions = ch_versions.mix(RUN_JALVIEW.out.versions)
+            ch_multiqc_rep = ch_multiqc_rep.mix(RUN_JALVIEW.out.multiqc.collect())
+        }
     }
 
     //

@@ -27,7 +27,8 @@ process RUN_ALPHAFOLD2_MSA {
     output:
     path ("${fasta.baseName}*")
     path ("${fasta.baseName}.features.pkl"), emit: features
-    path "versions.yml"                    , emit: versions
+    tuple val(meta), path("${fasta.baseName}/msas/small_bfd_hits.sto"), emit: alignment
+    path "versions.yml", emit: versions
 
     when:
     task.ext.when == null || task.ext.when
